@@ -20,7 +20,14 @@ This lab designs and deploys that environment securely using Azure best practice
 
 ## Architecture
 
+<details>
+<summary><strong>Click to view architecture diagram</strong></summary>
+
+<br>
+
 ![Lab 01 Architecture](screenshots/architecture.svg)
+
+</details>
 
 ---
 
