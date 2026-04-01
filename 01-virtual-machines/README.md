@@ -6,26 +6,23 @@ A small software company is migrating two legacy on-premises servers to Azure. O
 
 This lab designs and deploys that environment securely using Azure best practices.
 
+---
+
 ## Skills Demonstrated
 
-![VM Deployment](https://img.shields.io/badge/VM%20Deployment-0078D4?style=flat-square&logoColor=white)
-![Availability Zones](https://img.shields.io/badge/Availability%20Zones-0078D4?style=flat-square&logoColor=white)
-![Disk Management](https://img.shields.io/badge/Disk%20Management-0078D4?style=flat-square&logoColor=white)
-![Azure Bastion](https://img.shields.io/badge/Azure%20Bastion-0078D4?style=flat-square&logoColor=white)
-![Azure Backup](https://img.shields.io/badge/Azure%20Backup-0078D4?style=flat-square&logoColor=white)
-![Snapshots](https://img.shields.io/badge/Snapshots-0078D4?style=flat-square&logoColor=white)
-![Load Balancer](https://img.shields.io/badge/Load%20Balancer-0078D4?style=flat-square&logoColor=white)
-![Health Probes](https://img.shields.io/badge/Health%20Probes-0078D4?style=flat-square&logoColor=white)
-![NAT Gateway](https://img.shields.io/badge/NAT%20Gateway-0078D4?style=flat-square&logoColor=white)
-![Cost Optimization](https://img.shields.io/badge/Cost%20Optimization-0078D4?style=flat-square&logoColor=white)
-![Troubleshooting](https://img.shields.io/badge/Troubleshooting-0078D4?style=flat-square&logoColor=white)
-![Resource Tagging](https://img.shields.io/badge/Resource%20Tagging-0078D4?style=flat-square&logoColor=white)
+| | |
+|:--|:--|
+| **Compute & Storage** | ![VM Deployment](https://img.shields.io/badge/VM%20Deployment-0078D4?style=flat-square&logoColor=white) ![Availability Zones](https://img.shields.io/badge/Availability%20Zones-0078D4?style=flat-square&logoColor=white) ![Disk Management](https://img.shields.io/badge/Disk%20Management-0078D4?style=flat-square&logoColor=white) ![Snapshots](https://img.shields.io/badge/Snapshots-0078D4?style=flat-square&logoColor=white) |
+| **Networking** | ![Azure Bastion](https://img.shields.io/badge/Azure%20Bastion-0078D4?style=flat-square&logoColor=white) ![Load Balancer](https://img.shields.io/badge/Load%20Balancer-0078D4?style=flat-square&logoColor=white) ![NAT Gateway](https://img.shields.io/badge/NAT%20Gateway-0078D4?style=flat-square&logoColor=white) ![Health Probes](https://img.shields.io/badge/Health%20Probes-0078D4?style=flat-square&logoColor=white) |
+| **Operations** | ![Azure Backup](https://img.shields.io/badge/Azure%20Backup-0078D4?style=flat-square&logoColor=white) ![Cost Optimization](https://img.shields.io/badge/Cost%20Optimization-0078D4?style=flat-square&logoColor=white) ![Troubleshooting](https://img.shields.io/badge/Troubleshooting-0078D4?style=flat-square&logoColor=white) ![Resource Tagging](https://img.shields.io/badge/Resource%20Tagging-0078D4?style=flat-square&logoColor=white) |
 
 ---
 
 ## Architecture
 
-## ![Lab 01 Architecture](screenshots\architecture.svg)
+![Lab 01 Architecture](screenshots/architecture.svg)
+
+---
 
 ## What Was Built
 
@@ -50,88 +47,7 @@ This lab designs and deploys that environment securely using Azure best practice
 
 ---
 
-<details>
-<summary><strong>Key Decisions</strong></summary>
-
-<br>
-
-**Why Azure Bastion instead of public RDP or SSH?**
-
-RDP on port 3389 and SSH on port 22 are among the most scanned ports on the internet. Exposing them publicly invites brute force attacks and credential stuffing. Bastion provides a fully managed browser-based connection over HTTPS with no inbound ports required on the VMs. The VMs have no public IP addresses at all.
-
-**Why Availability Zones over Availability Sets?**
-
-Availability Zones protect against full datacenter failure. Each zone is a physically separate datacenter within the same region with independent power, cooling, and networking. Availability Sets only protect against rack-level failures within a single datacenter. For a migration scenario where uptime matters, Zones provide the stronger guarantee. Windows VM was placed in Zone 1 and Linux in Zone 2 to ensure they never share the same physical failure domain.
-
-**Why Standard SKU Load Balancer over Basic?**
-
-Microsoft is deprecating the Basic SKU. Standard supports Availability Zones, has a 99.99% SLA, supports larger backend pools, provides richer health probe options, and integrates with NAT Gateway for outbound access. Basic has none of these. All new deployments should use Standard.
-
-**Why a NAT Gateway for outbound internet?**
-
-When VMs are placed in a Standard Load Balancer backend pool, they lose default outbound internet access. This is a security feature, not a bug. Without a NAT Gateway, VMs cannot reach the internet for OS updates, package installs, or external services. NAT Gateway provides a dedicated, predictable outbound IP while keeping VMs completely private with no inbound exposure.
-
-**Why take a snapshot before resizing?**
-
-VM resizing changes the underlying hardware profile and forces a restart. If the resize causes instability or application failure, there is no built-in rollback. A snapshot taken before the resize operation provides an instant restore point for the OS disk. In production this would be scheduled during a maintenance window.
-
-**Why Standard SSD over Premium SSD?**
-
-Cost optimization. Premium SSD is designed for production workloads requiring sub-millisecond latency and high IOPS. Lab workloads have no such requirements. Standard SSD provides adequate performance at roughly 60% of the cost of Premium. The data disk uses ZRS (Zone Redundant Storage) which provides additional redundancy at minimal extra cost.
-
-**Why HTTP health probe on port 80?**
-
-HTTP probes are more reliable than TCP probes for web workloads. A TCP probe only checks that the port is open. An HTTP probe checks that the application is actually responding with a valid status code. A VM where the web server has crashed but the port is still bound would pass a TCP probe but fail an HTTP probe. The HTTP probe is the correct choice here.
-
-**Why Enhanced backup policy over Standard?**
-
-Enhanced policy supports Trusted Launch VMs which is the security type used in this lab. Standard policy does not. Enhanced also supports multiple backups per day and longer operational tier retention, which aligns with the 4-hour recovery objective in the business scenario.
-
-</details>
-
----
-
-<details>
-<summary><strong>Troubleshooting</strong></summary>
-
-<br>
-
-**Problem: Load balancer not returning a response from vm-windows-01**
-
-IIS was installed and running. The Azure NSG inbound rule for port 80 was in place. The health probe still showed the VM as healthy. However, browsing the load balancer frontend IP returned no response from the Windows VM while Linux responded correctly.
-
-Investigation: Verified IIS was running with `Get-Service W3SVC` inside the VM via Bastion. Confirmed the NSG rule existed. Checked the health probe status which showed both VMs as Up.
-
-Resolution: After a hard browser refresh and waiting approximately 2 minutes the load balancer began routing to both VMs correctly. The exact cause is uncertain. Likely explanation: the browser was serving a cached response, or the session persistence was temporarily pinning traffic to the Linux VM. Both VMs confirmed healthy in the backend pool immediately after.
-
-Learning: Azure Load Balancer session behavior can be affected by browser caching. Always test with a hard refresh (Ctrl+Shift+R) and consider using curl or a private browser window for more reliable testing.
-
-**Problem: Linux VM could not download packages (apt update failing)**
-
-After placing both VMs in the Standard Load Balancer backend pool, the Linux VM lost outbound internet access. `sudo apt update` timed out with no connection.
-
-Root cause: Standard Load Balancer removes default outbound internet access from VMs in its backend pool. This is by design and is a security feature. VMs with no public IP and no outbound rule have no internet access.
-
-Resolution: Deployed a NAT Gateway (`nat-lab01`) with a dedicated public IP (`pip-nat-lab01`) and associated it with `subnet-vms`. After NAT Gateway deployment, `sudo apt update` and `sudo apt install nginx` completed successfully.
-
-Learning: Standard Load Balancer plus NAT Gateway is the correct enterprise pattern for private VMs that need outbound access. Do not assign public IPs to backend pool VMs for this purpose.
-
-**Problem: vm-windows-01 had an unintended public IP assigned**
-
-During VM creation the portal assigned a new public IP (`vm-windows-01-ip`) despite selecting None. This was discovered when hitting the free tier public IP quota limit of 3 while trying to create the NAT Gateway.
-
-Resolution: Navigated to the VM NIC IP configuration, removed the public IP association, then deleted the unassociated public IP to free up the quota slot.
-
-Learning: Always verify the Networking tab review screen before creating a VM. The portal occasionally defaults back to creating a new public IP. Removing it post-creation works fine but costs time.
-
-</details>
-
----
-
-<details>
-<summary><strong>Screenshots</strong></summary>
-
-<br>
+## Screenshots
 
 ### Network Setup
 
@@ -140,6 +56,12 @@ The foundation of the entire lab is the virtual network. Before deploying any VM
 <img src="screenshots/01-vnet-review-create.png" width="700" alt="VNet Review and Create">
 
 _VNet review page confirming subnet-vms, AzureBastionSubnet, and Bastion all configured before creation_
+
+A subnet-level NSG was attached to `subnet-vms` to control all traffic into and out of both VMs from a single policy point. The single custom inbound rule allows HTTP on port 80 from any source, which is required for the load balancer health probe and public web traffic. All other inbound traffic is denied by the default `DenyAllInBound` rule at priority 65500. On the outbound side, only VNet-internal and internet-bound traffic is permitted — outbound internet flows through the NAT Gateway rather than directly from the VMs.
+
+<img src="screenshots/29-nsg-lab01-vms-rules.png" width="700" alt="NSG Rules">
+
+_nsg-lab01-vms inbound and outbound rules: one custom AllowHTTP rule on port 80, all other inbound denied by default; outbound permits VNet and internet traffic via NAT Gateway_
 
 ---
 
@@ -267,25 +189,25 @@ _Load balancing rule health status: 100% of instances healthy, both VMs respondi
 
 With both web servers running (Nginx on Linux, IIS on Windows), the load balancer was tested by hitting the frontend public IP from a browser. The same IP returned different responses on successive refreshes, confirming traffic distribution across both VMs.
 
-<img src="screenshots/21-lb-health-probe-metric-100.png" width="700" alt="Browser Response Windows IIS via Load Balancer">
+<img src="screenshots/21-browser-response-windows-iis.png" width="700" alt="Browser Response Windows IIS via Load Balancer">
 
 _Browser hitting lb-lab01 frontend IP: IIS default page served from vm-windows-01, confirming the load balancer is routing traffic to the Windows backend_
 
 The same frontend IP was refreshed and returned a different response, this time from the Linux VM, confirming round-robin distribution across both VMs.
 
-<img src="screenshots/22-lb-insights-diagram.png" width="700" alt="Browser Response Linux VM via Load Balancer">
+<img src="screenshots/22-browser-response-linux-vm.png" width="700" alt="Browser Response Linux VM via Load Balancer">
 
 _Same frontend IP on next request: Nginx response from vm-linux-01, proving the load balancer is distributing traffic across both VMs_
 
 The Load Balancer Insights blade provides a topology view of the full path from frontend through the rule to the backend pool and individual VMs.
 
-<img src="screenshots/23-browser-response-linux-vm.png" width="700" alt="Load Balancer Insights Topology">
+<img src="screenshots/23-lb-insights-diagram.png" width="700" alt="Load Balancer Insights Topology">
 
 _Insights topology: lb-frontend to lb-rule-http to lb-backend-pool, both vm-linux-01 and vm-windows-01 showing green health indicators_
 
 Azure Monitor metrics provide a time-series view of health probe status confirming both backends were healthy throughout the test.
 
-<img src="screenshots/24-browser-response-windows-iis.png" width="700" alt="Health Probe Metric Chart">
+<img src="screenshots/24-lb-health-probe-metric-100.png" width="700" alt="Health Probe Metric Chart">
 
 _Azure Monitor metrics chart showing average Health Probe Status for lb-lab01, confirming both backends remained healthy throughout the load balancer test_
 
@@ -309,7 +231,7 @@ _RG-lab01-compute: all 18 resources deployed including Bastion, VMs, disks, load
 
 ### Troubleshooting Evidence
 
-During the lab two real configuration issues were encountered. Both are documented in detail in the Troubleshooting section above. The screenshots below provide visual evidence of each issue.
+During the lab two real configuration issues were encountered. Both are documented in detail in the Troubleshooting section below. The screenshots below provide visual evidence of each issue.
 
 The first was an unintended public IP assigned to `vm-windows-01` during creation despite selecting None. It was discovered when the NAT Gateway deployment hit the free tier quota limit of 3 public IPs.
 
@@ -322,6 +244,112 @@ The second was `vm-linux-01` losing outbound internet access after joining the S
 <img src="screenshots/28-lb-backend-pool-running.png" width="700" alt="Backend Pool After NAT Gateway Fix">
 
 _Backend pool confirming both VMs Running in their correct availability zones after NAT Gateway restored outbound connectivity_
+
+---
+
+<details>
+<summary><strong>Key Decisions</strong></summary>
+
+<br>
+
+**Why Azure Bastion instead of public RDP or SSH?**
+
+RDP on port 3389 and SSH on port 22 are among the most scanned ports on the internet. Exposing them publicly invites brute force attacks and credential stuffing. Bastion provides a fully managed browser-based connection over HTTPS with no inbound ports required on the VMs. The VMs have no public IP addresses at all.
+
+---
+
+**Why Availability Zones over Availability Sets?**
+
+Availability Zones protect against full datacenter failure. Each zone is a physically separate datacenter within the same region with independent power, cooling, and networking. Availability Sets only protect against rack-level failures within a single datacenter. For a migration scenario where uptime matters, Zones provide the stronger guarantee. Windows VM was placed in Zone 1 and Linux in Zone 2 to ensure they never share the same physical failure domain.
+
+---
+
+**Why Standard SKU Load Balancer over Basic?**
+
+Microsoft is deprecating the Basic SKU. Standard supports Availability Zones, has a 99.99% SLA, supports larger backend pools, provides richer health probe options, and integrates with NAT Gateway for outbound access. Basic has none of these. All new deployments should use Standard.
+
+---
+
+**Why a NAT Gateway for outbound internet?**
+
+When VMs are placed in a Standard Load Balancer backend pool, they lose default outbound internet access. This is a security feature, not a bug. Without a NAT Gateway, VMs cannot reach the internet for OS updates, package installs, or external services. NAT Gateway provides a dedicated, predictable outbound IP while keeping VMs completely private with no inbound exposure.
+
+---
+
+**Why take a snapshot before resizing?**
+
+VM resizing changes the underlying hardware profile and forces a restart. If the resize causes instability or application failure, there is no built-in rollback. A snapshot taken before the resize operation provides an instant restore point for the OS disk. In production this would be scheduled during a maintenance window.
+
+---
+
+**Why Standard SSD over Premium SSD?**
+
+Cost optimization. Premium SSD is designed for production workloads requiring sub-millisecond latency and high IOPS. Lab workloads have no such requirements. Standard SSD provides adequate performance at roughly 60% of the cost of Premium. The data disk uses ZRS (Zone Redundant Storage) which provides additional redundancy at minimal extra cost.
+
+---
+
+**Why HTTP health probe on port 80?**
+
+HTTP probes are more reliable than TCP probes for web workloads. A TCP probe only checks that the port is open. An HTTP probe checks that the application is actually responding with a valid status code. A VM where the web server has crashed but the port is still bound would pass a TCP probe but fail an HTTP probe. The HTTP probe is the correct choice here.
+
+---
+
+**Why Enhanced backup policy over Standard?**
+
+Enhanced policy supports Trusted Launch VMs which is the security type used in this lab. Standard policy does not. Enhanced also supports multiple backups per day and longer operational tier retention, which aligns with the 4-hour recovery objective in the business scenario.
+
+---
+
+**Why password authentication on the Linux VM?**
+
+SSH key authentication is the correct and expected practice for Linux VMs in any real environment. It eliminates the risk of brute-force credential attacks and is the default recommendation in every Azure security baseline. Password authentication was used here solely for lab simplicity — no production workload, no exposed SSH port, and access is restricted entirely to Bastion. In a real migration this would be SSH keys from day one.
+
+---
+
+**Why HTTP only and not HTTPS?**
+
+TLS termination was intentionally out of scope for this lab. The focus here is VM deployment, availability, and backup fundamentals. In a production migration, HTTPS would be configured at the load balancer frontend, the correct pattern being an Azure Application Gateway with WAF and TLS offloading, or a Let's Encrypt certificate deployed on each VM. Introducing certificate management here would conflate two separate concerns. HTTPS and Application Gateway are covered in a dedicated networking lab.
+
+</details>
+
+---
+
+<details>
+<summary><strong>Troubleshooting</strong></summary>
+
+<br>
+
+**Problem: Load balancer not returning a response from vm-windows-01**
+
+IIS was installed and running. The Azure NSG inbound rule for port 80 was in place. The health probe still showed the VM as healthy. However, browsing the load balancer frontend IP returned no response from the Windows VM while Linux responded correctly.
+
+Investigation: Verified IIS was running with `Get-Service W3SVC` inside the VM via Bastion. Confirmed the NSG rule existed. Checked the health probe status which showed both VMs as Up.
+
+Resolution: After a hard browser refresh and waiting approximately 2 minutes the load balancer began routing to both VMs correctly. The exact cause is uncertain. Likely explanation: the browser was serving a cached response, or the session persistence was temporarily pinning traffic to the Linux VM. Both VMs confirmed healthy in the backend pool immediately after.
+
+**Learning:** Azure Load Balancer session behavior can be affected by browser caching. Always test with a hard refresh (Ctrl+Shift+R) and consider using curl or a private browser window for more reliable testing.
+
+---
+
+**Problem: Linux VM could not download packages (apt update failing)**
+
+After placing both VMs in the Standard Load Balancer backend pool, the Linux VM lost outbound internet access. `sudo apt update` timed out with no connection.
+
+Root cause: Standard Load Balancer removes default outbound internet access from VMs in its backend pool. This is by design and is a security feature. VMs with no public IP and no outbound rule have no internet access.
+
+Resolution: Deployed a NAT Gateway (`nat-lab01`) with a dedicated public IP (`pip-nat-lab01`) and associated it with `subnet-vms`. After NAT Gateway deployment, `sudo apt update` and `sudo apt install nginx` completed successfully.
+
+**Learning:** Standard Load Balancer plus NAT Gateway is the correct enterprise pattern for private VMs that need outbound access. Do not assign public IPs to backend pool VMs for this purpose.
+
+---
+
+**Problem: vm-windows-01 had an unintended public IP assigned**
+
+During VM creation the portal assigned a new public IP (`vm-windows-01-ip`) despite selecting None. This was discovered when hitting the free tier public IP quota limit of 3 while trying to create the NAT Gateway.
+
+Resolution: Navigated to the VM NIC IP configuration, removed the public IP association, then deleted the unassociated public IP to free up the quota slot.
+
+**Learning:** Always verify the Networking tab review screen before creating a VM. The portal occasionally defaults back to creating a new public IP. Removing it post-creation works fine but costs time.
 
 </details>
 
