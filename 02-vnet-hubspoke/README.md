@@ -2,7 +2,7 @@
 
 ## Business Scenario
 
-A mid-sized company with three departments — IT, Finance, and HR — is moving to Azure. Finance and HR must be completely isolated from each other but both need access to shared IT services like monitoring and management tooling. The company also has a small on-premises office that needs secure access to the hub without being able to reach the department workloads directly.
+A mid-sized company with three departments (IT, Finance, and HR) is moving to Azure. Finance and HR must be completely isolated from each other but both need access to shared IT services like monitoring and management tooling. The company also has a small on-premises office that needs secure access to the hub without being able to reach the department workloads directly.
 
 Three additional requirements: no public IP on any workload VM, all internet-bound traffic from departments must pass through a central inspection point, and every access control must be documented and provable with tooling rather than assumed.
 
@@ -37,26 +37,26 @@ This lab designs and deploys that environment using a hub-spoke topology, NSG-en
 
 | Resource | Name | Details |
 |---|---|---|
-| Virtual Network | vnet-hub | 10.0.0.0/16, Central India — hub for all shared services |
-| Virtual Network | vnet-spoke-finance | 10.1.0.0/16, Central India — Finance department |
-| Virtual Network | vnet-spoke-hr | 10.2.0.0/16, Central India — HR department |
-| Virtual Network | vnet-onprem-sim | 10.3.0.0/16, Central India — simulated on-premises office |
+| Virtual Network | vnet-hub | 10.0.0.0/16, Central India: hub for all shared services |
+| Virtual Network | vnet-spoke-finance | 10.1.0.0/16, Central India: Finance department |
+| Virtual Network | vnet-spoke-hr | 10.2.0.0/16, Central India: HR department |
+| Virtual Network | vnet-onprem-sim | 10.3.0.0/16, Central India: simulated on-premises office |
 | VNet Peering | hub-to-finance | Bidirectional, forwarded traffic enabled, no gateway transit |
 | VNet Peering | hub-to-hr | Bidirectional, forwarded traffic enabled, no gateway transit |
 | VNet Peering | hub-to-onprem | Bidirectional, forwarded traffic enabled, no gateway transit |
-| Linux VM | vm-inspection | Ubuntu 24.04 LTS, Standard DC1ds v3, snet-inspect — NVA/router |
-| Windows VM | vm-finance | Windows Server 2022, Standard DC1ds v3, snet-finance — Finance workload |
-| Windows VM | vm-hr | Windows Server 2022, Standard DC1ds v3, snet-hr — HR workload |
-| Windows VM | vm-mgmt | Windows Server 2022, Standard DC1ds v3, snet-mgmt — shared management |
+| Linux VM | vm-inspection | Ubuntu 24.04 LTS, Standard DC1ds v3, snet-inspect: NVA/router |
+| Windows VM | vm-finance | Windows Server 2022, Standard DC1ds v3, snet-finance: Finance workload |
+| Windows VM | vm-hr | Windows Server 2022, Standard DC1ds v3, snet-hr: HR workload |
+| Windows VM | vm-mgmt | Windows Server 2022, Standard DC1ds v3, snet-mgmt: shared management |
 | NSG | nsg-finance | Subnet-level, Finance isolation rules |
 | NSG | nsg-hr | Subnet-level, HR isolation rules |
 | NSG | nsg-inspect | Subnet-level, NVA inbound + internet egress rules |
 | Route Table | rt-finance | 0.0.0.0/0 → Virtual appliance 10.0.1.4, associated with snet-finance |
 | Route Table | rt-hr | 0.0.0.0/0 → Virtual appliance 10.0.1.4, associated with snet-hr |
 | NAT Gateway | nat-cent | Outbound internet for snet-mgmt |
-| Log Analytics Workspace | law-hubspoke | Centralised log collection — hub shared service |
+| Log Analytics Workspace | law-hubspoke | Centralised log collection: hub shared service |
 | Data Collection Rule | dcr-hubspoke-lab | Windows Event Logs from vm-finance and vm-hr to law-hubspoke |
-| Azure Bastion | vnet-hub-Bastion | Standard SKU, hub VNet — covers all peered spokes |
+| Azure Bastion | vnet-hub-Bastion | Standard SKU, hub VNet: covers all peered spokes |
 
 ---
 
@@ -64,7 +64,7 @@ This lab designs and deploys that environment using a hub-spoke topology, NSG-en
 
 ### Network Foundation
 
-Four VNets were created before any VM was deployed. Address spaces were planned to avoid any overlap, which is a hard requirement for VNet peering. The hub takes 10.0.0.0/16, Finance takes 10.1.0.0/16, HR takes 10.2.0.0/16, and the on-premises simulation takes 10.3.0.0/16. Each spoke has a single workload subnet. The hub has three — one for Azure Bastion, one for the inspection VM, and one for the management VM and shared services.
+Four VNets were created before any VM was deployed. Address spaces were planned to avoid any overlap, which is a hard requirement for VNet peering. The hub takes 10.0.0.0/16, Finance takes 10.1.0.0/16, HR takes 10.2.0.0/16, and the on-premises simulation takes 10.3.0.0/16. Each spoke has a single workload subnet. The hub has three: one for Azure Bastion, one for the inspection VM, and one for the management VM and shared services.
 
 <img src="screenshots/01-vnets-all.png" width="700" alt="All VNets">
 
@@ -94,7 +94,7 @@ _vm-inspection review: Ubuntu 24.04 LTS, vnet-hub, snet-inspect, no public IP, S
 
 <img src="screenshots/05-vm-finance-creation.png" width="700" alt="vm-finance creation">
 
-_vm-finance review: Windows Server 2022, vnet-spoke-finance, snet-finance (10.1.1.0/24), no public IP, no NSG at NIC level — NSG applied at subnet level in Phase 5_
+_vm-finance review: Windows Server 2022, vnet-spoke-finance, snet-finance (10.1.1.0/24), no public IP, no NSG at NIC level (NSG applied at subnet level in Phase 5)_
 
 <img src="screenshots/06-vm-hr-creation.png" width="700" alt="vm-hr creation">
 
@@ -102,7 +102,7 @@ _vm-hr review: Windows Server 2022, vnet-spoke-hr, snet-hr (10.2.1.0/24), no pub
 
 <img src="screenshots/07-vm-mgmt-creation.png" width="700" alt="vm-mgmt creation">
 
-_vm-mgmt review: Windows Server 2022, vnet-hub, snet-mgmt (10.0.2.0/24), no public IP — acts as the shared IT management host_
+_vm-mgmt review: Windows Server 2022, vnet-hub, snet-mgmt (10.0.2.0/24), no public IP (acts as the shared IT management host)_
 
 ---
 
@@ -114,11 +114,11 @@ Enabling only one of the two causes silent packet drops with no error message. T
 
 <img src="screenshots/08-vm-inspection-ip-forwarding-enabled.png" width="700" alt="IP forwarding NIC">
 
-_vm-inspection234 NIC IP configurations: Enable IP forwarding checked, private IP 10.0.1.4 Static — platform-level forwarding enabled_
+_vm-inspection234 NIC IP configurations: Enable IP forwarding checked, private IP 10.0.1.4 Static, platform-level forwarding enabled_
 
 <img src="screenshots/09-vm-inspection-ip-forward-kernel.png" width="700" alt="IP forwarding kernel">
 
-_Bastion SSH session to vm-inspection: sysctl confirms net.ipv4.ip_forward = 1 — kernel-level forwarding enabled and persisted to /etc/sysctl.conf_
+_Bastion SSH session to vm-inspection: sysctl confirms net.ipv4.ip_forward = 1; kernel-level forwarding enabled and persisted to /etc/sysctl.conf_
 
 ---
 
@@ -158,9 +158,9 @@ _rt-hr: identical route configuration. Associated with snet-hr in vnet-spoke-hr.
 
 ### Effective Routes
 
-The Effective Routes blade is the ground truth for what routing is actually active on a VM's NIC. It shows every route Azure is applying — system defaults, peering routes, and UDRs — with their current state. This is the correct tool for verifying forced tunnelling, not just checking that a route table exists.
+The Effective Routes blade is the ground truth for what routing is actually active on a VM's NIC. It shows every route Azure is applying (system defaults, peering routes, and UDRs) with their current state. This is the correct tool for verifying forced tunnelling, not just checking that a route table exists.
 
-The key row is 0.0.0.0/0. The Default source entry for Internet shows State: Invalid — Azure's own system route has been overridden and is no longer active. The User source entry for Virtual appliance shows State: Active, confirming the UDR is in effect and all internet-bound traffic from this VM goes through vm-inspection.
+The key row is 0.0.0.0/0. The Default source entry for Internet shows State: Invalid; Azure's own system route has been overridden and is no longer active. The User source entry for Virtual appliance shows State: Active, confirming the UDR is in effect and all internet-bound traffic from this VM goes through vm-inspection.
 
 <img src="screenshots/15-vm-finance-effective-routes.png" width="700" alt="vm-finance effective routes">
 
@@ -168,19 +168,19 @@ _vm-finance8 NIC effective routes: Default 0.0.0.0/0 → Internet = Invalid (ove
 
 <img src="screenshots/16-vm-hr-effective-routes.png" width="700" alt="vm-hr effective routes">
 
-_vm-hr101 NIC effective routes: identical pattern — Default internet route Invalid, User Virtual appliance route Active. Associated route table: rt-hr._
+_vm-hr101 NIC effective routes: identical pattern: Default internet route Invalid, User Virtual appliance route Active. Associated route table: rt-hr._
 
 ---
 
 ### Centralised Monitoring
 
-The Log Analytics workspace in vnet-hub represents the IT shared services that both Finance and HR departments feed into. Both spoke VMs were onboarded using Azure Monitor Agent via a Data Collection Rule — not the Azure Diagnostics extension, which Microsoft deprecated and retired on March 31, 2026.
+The Log Analytics workspace in vnet-hub represents the IT shared services that both Finance and HR departments feed into. Both spoke VMs were onboarded using Azure Monitor Agent via a Data Collection Rule, not the Azure Diagnostics extension, which Microsoft deprecated and retired on March 31, 2026.
 
 The DCR visualizer confirms the data pipeline: both VMs collect Windows Event Logs and send them to law-hubspoke. This demonstrates that hub shared services are reachable from both spokes without any spoke-to-spoke connectivity.
 
 <img src="screenshots/20-log-analytics-workspace.png" width="700" alt="Log Analytics workspace">
 
-_law-hubspoke workspace overview: Status Active, Pay-as-you-go, Workspace ID visible, Central India — the hub's centralised logging service_
+_law-hubspoke workspace overview: Status Active, Pay-as-you-go, Workspace ID visible, Central India: the hub's centralised logging service_
 
 <img src="screenshots/21-dcr-creation-review.png" width="700" alt="DCR creation">
 
@@ -202,13 +202,13 @@ All security controls were verified using Azure Network Watcher rather than clai
 
 _Connection Troubleshoot: vm-finance → vm-mgmt. Connectivity: Reachable, 316 probes sent, 0 failed. Outbound NSG: Allow. Next hop: VirtualNetworkPeering via System Route. Destination port: Reachable._
 
-**Finance cannot reach HR — both NSGs fire:**
+**Finance cannot reach HR (both NSGs fire):**
 
 This is the most important result in the lab. The Connection Troubleshoot output shows not just that the connection is blocked, but exactly which NSG rules are responsible. nsg-finance's outbound deny fires at the source and nsg-hr's inbound deny fires at the destination. Double enforcement. The Next hop also confirms the UDR is active: traffic is routing through Virtual Appliance at 10.0.1.4 via rt-finance, meaning even if both NSG deny rules were removed, traffic would still hit vm-inspection rather than reaching vm-hr directly.
 
 <img src="screenshots/18-ct-finance-to-hr-unreachable.png" width="700" alt="Finance to HR unreachable">
 
-_Connection Troubleshoot: vm-finance → vm-hr. Connectivity: Unreachable, 316 probes failed. Outbound NSG: Deny — nsg-finance. Inbound NSG: Deny — nsg-hr. Next hop: Virtual Appliance 10.0.1.4, Route table: rt-finance._
+_Connection Troubleshoot: vm-finance → vm-hr. Connectivity: Unreachable, 316 probes failed. Outbound NSG: Deny (nsg-finance). Inbound NSG: Deny (nsg-hr). Next hop: Virtual Appliance 10.0.1.4, Route table: rt-finance._
 
 **IP Flow Verify returns the exact rule name:**
 
@@ -269,7 +269,7 @@ The Basic SKU does not support VNet peering connectivity. It can only reach VMs 
 
 **Why Azure Monitor Agent over the Diagnostics extension?**
 
-Microsoft deprecated the Azure Diagnostics extension and retired it on March 31, 2026 — the same day this lab was built. Azure Monitor Agent is the current replacement, uses Data Collection Rules for flexible targeting, and does not require a storage account. Using the deprecated extension would have meant building on a component with no future support path.
+Microsoft deprecated the Azure Diagnostics extension and retired it on March 31, 2026 (the same day this lab was built). Azure Monitor Agent is the current replacement, uses Data Collection Rules for flexible targeting, and does not require a storage account. Using the deprecated extension would have meant building on a component with no future support path.
 
 </details>
 
@@ -296,7 +296,7 @@ Resolution: Connected to vm-inspection via Bastion and ran `sudo sysctl -w net.i
 
 After setting Protocol to Any on the AllowBastionInbound rule, Bastion connections to vm-finance were working. However the rule was reviewed and corrected to TCP before final screenshots.
 
-Root cause: Not a functional problem but a configuration quality issue. Bastion connects to VMs over TCP only — port 3389 for RDP and port 22 for SSH. Setting Protocol to Any unnecessarily permits UDP on those ports. It does not break anything but it widens the rule beyond what is required.
+Root cause: Not a functional problem but a configuration quality issue. Bastion connects to VMs over TCP only: port 3389 for RDP and port 22 for SSH. Setting Protocol to Any unnecessarily permits UDP on those ports. It does not break anything but it widens the rule beyond what is required.
 
 Resolution: Edited the rule to set Protocol to TCP. No connectivity impact.
 
@@ -310,7 +310,7 @@ When saving the DenyAllInbound rule at priority 4096, Azure displayed two warnin
 
 Root cause: Azure warns on any explicit deny that blocks service tags it considers important for platform functionality. These are informational warnings, not errors, and do not prevent saving.
 
-Resolution: Ignored both warnings and saved the rule. There is no load balancer in this lab, so the first warning is irrelevant. The second warning is intentional — VirtualNetwork-to-VirtualNetwork traffic being blocked is the entire point of the explicit deny rules above it.
+Resolution: Ignored both warnings and saved the rule. There is no load balancer in this lab, so the first warning is irrelevant. The second warning is intentional: VirtualNetwork-to-VirtualNetwork traffic being blocked is the entire point of the explicit deny rules above it.
 
 **Learning:** Azure portal warnings on NSG rules are advisory. Evaluate each one against the intent of the rule rather than accepting or dismissing them automatically.
 
