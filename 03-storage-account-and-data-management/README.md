@@ -103,7 +103,7 @@ _stlogssur01sea Lifecycle management: Enable access tracking checkbox checked be
 
 The policy JSON confirms both rules are defined correctly. The logs-to-archive rule includes both `daysAfterLastAccessTimeGreaterThan: 90` and `daysAfterLastTierChangeGreaterThan: 7` — the second condition prevents blobs that were just tiered to Cool from immediately qualifying for Archive before the tier change has had time to settle.
 
-<img src="screenshots/Lifecycle_management_blade_showing_both_rules__logs-to-cool_and_logs-to-archive_.png" width="700" alt="Lifecycle Policy JSON">
+<img src="screenshots/Lifecycle_management_blade_showing_both_rules__logs-to-cool_and_logs-to-archive_.png" width="350" alt="Lifecycle Policy JSON">
 
 _Lifecycle management Code View: logs-to-cool rule (tierToCool at 30 days last access) and logs-to-archive rule (tierToArchive at 90 days last access with 7-day tier change guard) both enabled for blockBlob type_
 
